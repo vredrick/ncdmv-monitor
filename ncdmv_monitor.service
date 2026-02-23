@@ -1,0 +1,15 @@
+[Unit]
+Description=NC DMV Appointment Availability Monitor
+After=network.target
+
+[Service]
+Type=simple
+User=vredrick
+WorkingDirectory=/home/vredrick/testing-playground/ncdmv-monitor
+ExecStart=/usr/bin/python3 ncdmv_monitor.py --loop
+Restart=always
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target

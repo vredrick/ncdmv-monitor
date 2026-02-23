@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NC DMV Appointment Monitor</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    line-height: 1.5;
+    padding: 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+
+  .service-type {
+    font-size: 0.85rem;
+    color: #555;
+  }
+
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #666;
+    margin-top: 0.5rem;
+  }
+
+  .pulse {
+    width: 8px;
+    height: 8px;
+    background: #22c55e;
+    border-radius: 50%;
+    animation: pulse-anim 2s ease-in-out infinite;
+  }
+
+  .pulse.error { background: #ef4444; animation: none; }
+  .pulse.stale { background: #f59e0b; }
+
+  @keyframes pulse-anim {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .summary {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    min-width: 100px;
+  }
+
+  .summary-card .num {
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .summary-card .label {
+    font-size: 0.75rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .num.available { color: #16a34a; }
+  .num.unavailable { color: #dc2626; }
+  .num.total { color: #2563eb; }
+
+  .section-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #888;
+    margin-bottom: 0.75rem;
+  }
+
+  .locations {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .loc-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    border-left: 4px solid #dc2626;
+    transition: border-color 0.2s;
+  }
+
+  .loc-card.open { border-left-color: #16a34a; }
+
+  .loc-card .loc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+  }
+
+  .loc-card .loc-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+  }
+
+  .badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .badge.open {
+    background: #dcfce7;
+    color: #166534;
+  }
+
+  .badge.closed {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  .loc-card .loc-address {
+    font-size: 0.8rem;
+    color: #555;
+  }
+
+  .loc-card .loc-distance {
+    font-size: 0.75rem;
+    color: #888;
+    margin-top: 0.2rem;
+  }
+
+  .history-section {
+    margin-bottom: 2rem;
+  }
+
+  .history-list {
+    list-style: none;
+  }
+
+  .history-list li {
+    background: #fff;
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  }
+
+  .history-icon {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .history-icon.new_opening { background: #16a34a; }
+  .history-icon.slot_taken { background: #dc2626; }
+  .history-icon.still_available { background: #2563eb; }
+
+  .history-text { flex: 1; }
+  .history-time {
+    font-size: 0.75rem;
+    color: #999;
+    white-space: nowrap;
+  }
+
+  .monitored-list {
+    font-size: 0.8rem;
+    color: #666;
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+
+  .loading, .error-msg {
+    text-align: center;
+    padding: 3rem 1rem;
+  }
+
+  .loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-msg { color: #dc2626; }
+  .error-msg .error-detail { font-size: 0.85rem; color: #666; margin-top: 0.5rem; }
+
+  footer {
+    text-align: center;
+    font-size: 0.75rem;
+    color: #aaa;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  footer a { color: #2563eb; text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NC DMV Appointment Monitor</h1>
+  <div class="service-type" id="service-type"></div>
+  <div class="status-bar">
+    <span class="pulse" id="pulse"></span>
+    <span id="last-check">Loading...</span>
+  </div>
+</header>
+
+<div id="content">
+  <div class="loading">
+    <div class="spinner"></div>
+    <div>Loading availability data...</div>
+  </div>
+</div>
+
+<footer>
+  Data auto-refreshes every 30 seconds &middot;
+  <a href="https://skiptheline.ncdot.gov" target="_blank" rel="noopener">NC DOT Scheduler</a>
+</footer>
+
+<script>
+(function() {
+  var REFRESH_MS = 30000;
+  var DATA_URL = 'data.json';
+  var contentEl = document.getElementById('content');
+  var lastCheckEl = document.getElementById('last-check');
+  var pulseEl = document.getElementById('pulse');
+  var serviceTypeEl = document.getElementById('service-type');
+
+  function relativeTime(isoStr) {
+    var then = new Date(isoStr);
+    var now = new Date();
+    var diffSec = Math.floor((now - then) / 1000);
+    if (diffSec < 0) return 'just now';
+    if (diffSec < 60) return diffSec + 's ago';
+    var diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return diffMin + 'm ago';
+    var diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return diffHr + 'h ago';
+    var diffDay = Math.floor(diffHr / 24);
+    return diffDay + 'd ago';
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function historyIcon(type) {
+    if (type === 'new_opening') return '+';
+    if (type === 'slot_taken') return '-';
+    return '=';
+  }
+
+  function historyLabel(item) {
+    if (item.type === 'new_opening') {
+      return '<strong>' + escapeHtml(item.location_name) + '</strong> became available';
+    }
+    if (item.type === 'slot_taken') {
+      return '<strong>' + escapeHtml(item.location_name) + '</strong> no longer available';
+    }
+    return '<strong>' + escapeHtml(item.location_name) + '</strong> still available';
+  }
+
+  function render(data) {
+    var locations = data.locations || [];
+    // Sort: available first, then alphabetical
+    locations.sort(function(a, b) {
+      if (a.available !== b.available) return a.available ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+
+    var availCount = 0;
+    var unavailCount = 0;
+    for (var i = 0; i < locations.length; i++) {
+      if (locations[i].available) availCount++;
+      else unavailCount++;
+    }
+
+    // Service type
+    serviceTypeEl.textContent = data.service_type || '';
+
+    // Last check + staleness
+    var lastCheck = data.last_check;
+    if (lastCheck) {
+      var ageSec = Math.floor((new Date() - new Date(lastCheck)) / 1000);
+      lastCheckEl.textContent = 'Last check: ' + relativeTime(lastCheck);
+      pulseEl.className = 'pulse' + (ageSec > 600 ? ' stale' : '');
+    }
+
+    var html = '';
+
+    // Summary cards
+    html += '<div class="summary">';
+    html += '<div class="summary-card"><div class="num available">' + availCount + '</div><div class="label">Available</div></div>';
+    html += '<div class="summary-card"><div class="num unavailable">' + unavailCount + '</div><div class="label">Unavailable</div></div>';
+    html += '<div class="summary-card"><div class="num total">' + locations.length + '</div><div class="label">Monitored</div></div>';
+    html += '</div>';
+
+    // Monitored locations
+    if (data.monitor_config && data.monitor_config.monitored_locations) {
+      html += '<div class="monitored-list">Watching: ' +
+        data.monitor_config.monitored_locations.map(escapeHtml).join(', ') +
+        '</div>';
+    }
+
+    // Location cards
+    html += '<div class="section-title">Locations</div>';
+    html += '<div class="locations">';
+    for (var j = 0; j < locations.length; j++) {
+      var loc = locations[j];
+      var openClass = loc.available ? ' open' : '';
+      var badgeClass = loc.available ? 'open' : 'closed';
+      var badgeText = loc.available ? 'Available' : 'Unavailable';
+      html += '<div class="loc-card' + openClass + '">';
+      html += '<div class="loc-header">';
+      html += '<span class="loc-name">' + escapeHtml(loc.name) + '</span>';
+      html += '<span class="badge ' + badgeClass + '">' + badgeText + '</span>';
+      html += '</div>';
+      html += '<div class="loc-address">' + escapeHtml(loc.address || '') + '</div>';
+      if (loc.distance) {
+        html += '<div class="loc-distance">' + escapeHtml(loc.distance) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // History
+    var history = data.history || [];
+    if (history.length > 0) {
+      html += '<div class="history-section">';
+      html += '<div class="section-title">Recent Changes</div>';
+      html += '<ul class="history-list">';
+      for (var k = 0; k < history.length; k++) {
+        var item = history[k];
+        html += '<li>';
+        html += '<span class="history-icon ' + escapeHtml(item.type) + '">' + historyIcon(item.type) + '</span>';
+        html += '<span class="history-text">' + historyLabel(item) + '</span>';
+        html += '<span class="history-time">' + relativeTime(item.timestamp) + '</span>';
+        html += '</li>';
+      }
+      html += '</ul>';
+      html += '</div>';
+    }
+
+    contentEl.innerHTML = html;
+  }
+
+  function showError(msg) {
+    pulseEl.className = 'pulse error';
+    lastCheckEl.textContent = 'Error loading data';
+    contentEl.innerHTML = '<div class="error-msg">' +
+      '<div>Could not load availability data</div>' +
+      '<div class="error-detail">' + escapeHtml(msg) + '</div>' +
+      '</div>';
+  }
+
+  function fetchData() {
+    var url = DATA_URL + '?t=' + Date.now();
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var data = JSON.parse(xhr.responseText);
+          render(data);
+        } catch (e) {
+          showError('Invalid JSON in data file');
+        }
+      } else if (xhr.status === 404) {
+        showError('No data yet \u2014 run the monitor to generate data.json');
+      } else {
+        showError('HTTP ' + xhr.status);
+      }
+    };
+    xhr.onerror = function() {
+      showError('Network error \u2014 is the page served via HTTP?');
+    };
+    xhr.send();
+  }
+
+  // Initial fetch + auto-refresh
+  fetchData();
+  setInterval(fetchData, REFRESH_MS);
+
+  // Also refresh relative timestamps every 15s without re-fetching
+  setInterval(function() {
+    var timeEls = document.querySelectorAll('.history-time');
+    // Timestamps are re-rendered on next fetch anyway
+  }, 15000);
+})();
+</script>
+
+</body>
+</html>

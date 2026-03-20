@@ -39,7 +39,7 @@ STATE_FILE = "ncdmv_state.json"
 
 # ─── Browser Settings ──────────────────────────────────────────────────────────
 # Timeout for waiting for page elements (milliseconds)
-PAGE_TIMEOUT = 30000
+PAGE_TIMEOUT = 60000
 
 # Number of retries on failure before giving up for this cycle
 MAX_RETRIES = 3

@@ -36,7 +36,7 @@ SERVICE_TYPE = "Driver License - First Time"
 CHECK_INTERVAL = 240
 LOG_FILE = "ncdmv_monitor.log"
 STATE_FILE = "ncdmv_state.json"
-PAGE_TIMEOUT = 30000
+PAGE_TIMEOUT = 60000
 MAX_RETRIES = 3
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -341,7 +341,9 @@ def scrape_locations() -> list[dict]:
         try:
             # ── Step 1: Load the welcome page ──
             logger.debug("Navigating to scheduler URL...")
-            page.goto(SCHEDULER_URL, wait_until="networkidle", timeout=PAGE_TIMEOUT)
+            page.goto(SCHEDULER_URL, wait_until="domcontentloaded", timeout=PAGE_TIMEOUT)
+            # Give the page extra time to finish loading dynamic content
+            page.wait_for_timeout(3000)
 
             # ── Step 2: Click "Make an Appointment" ──
             logger.debug("Clicking 'Make an Appointment'...")

@@ -1,5 +1,5 @@
 {
-  "last_check": "2026-03-26T23:02:52.759555+00:00",
+  "last_check": "2026-03-26T23:49:09.629016+00:00",
   "service_type": "Driver License - First Time",
   "scheduler_url": "https://skiptheline.ncdot.gov/Webapp/Appointment/Index/a7ade79b-996d-4971-8766-97feb75254de",
   "locations": [
@@ -7,22 +7,22 @@
       "name": "Asheville",
       "address": "1624 Patton Ave., Asheville, NC 28806",
       "distance": "",
-      "available": true,
-      "checked_at": "2026-03-26T23:02:38.742635+00:00"
+      "available": false,
+      "checked_at": "2026-03-26T23:48:54.734687+00:00"
     },
     {
       "name": "Brevard",
       "address": "50 Commerce St., Unit 4, Brevard, NC 28712",
       "distance": "",
       "available": false,
-      "checked_at": "2026-03-26T23:02:38.742635+00:00"
+      "checked_at": "2026-03-26T23:48:54.734687+00:00"
     },
     {
       "name": "Hendersonville",
       "address": "125 Baystone Dr., Hendersonville, NC 28791",
       "distance": "",
       "available": false,
-      "checked_at": "2026-03-26T23:02:38.742635+00:00"
+      "checked_at": "2026-03-26T23:48:54.734687+00:00"
     }
   ],
   "history": [],
